@@ -1,4 +1,11 @@
 {
+    "name": "peej/git",
+    "authors": [
+        {
+            "name": "Paul James",
+            "email": "paul@peej.co.uk"
+        }
+    ],
     "require-dev": {
         "phpspec/phpspec": "2.0.*@dev"
     },
