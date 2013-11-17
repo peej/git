@@ -1,5 +1,7 @@
 {
     "name": "peej/git",
+    "description": "An OO wrapper for Git allowing use of a Git repo as if it were a filesystem or database.",
+    "license": "MIT",
     "authors": [
         {
             "name": "Paul James",
