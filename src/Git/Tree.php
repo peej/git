@@ -7,6 +7,7 @@ class Tree implements \Iterator, \ArrayAccess
     private $repo;
     private $position = 0;
     private $entries = array();
+    private $entriesArray = array();
 
     public $sha;
     public $filename;
@@ -21,20 +22,15 @@ class Tree implements \Iterator, \ArrayAccess
     private function loadEntries()
     {
         if (!$this->entries) {
-            $treeString = $this->repo->exec('git cat-file -p '.$this->sha);
-
-            preg_match_all('/^[0-9]{6} (blob|tree) ([0-9a-f]{40})\t(.+)$/m', $treeString, $matches, PREG_SET_ORDER);
-            foreach ($matches as $match) {
-                switch ($match[1]) {
-                    case 'blob':
-                        $this->entries[$match[3]] = new Blob($this->repo, $match[2], $match[3]);
-                        break;
-                    case 'tree':
-                        $this->entries[$match[3]] = new Tree($this->repo, $match[2], $match[3]);
-                        break;
-                }
-            }
+            $this->entries = $this->repo->loadTree($this->sha);
+            $this->entriesArray = array_values($this->entries);
         }
+    }
+
+    public function entries()
+    {
+        $this->loadEntries();
+        return $this->entries;
     }
 
     public function rewind()
@@ -45,7 +41,7 @@ class Tree implements \Iterator, \ArrayAccess
     public function current()
     {
         $this->loadEntries();
-        return $this->entries[$this->position];
+        return $this->entriesArray[$this->position];
     }
 
     public function key()
@@ -61,7 +57,7 @@ class Tree implements \Iterator, \ArrayAccess
     public function valid()
     {
         $this->loadEntries();
-        return isset($this->entries[$this->position]);
+        return isset($this->entriesArray[$this->position]);
     }
 
     public function offsetSet($offset, $value)

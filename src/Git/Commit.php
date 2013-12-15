@@ -43,8 +43,7 @@ class Commit
 
             case 'files':
                 if (!$this->files) {
-                    $show = $this->repo->exec('git show --pretty="format:" --name-only '.$this->sha);
-                    $this->files = explode("\n", trim($show));
+                    $this->files = $this->repo->files($this->sha);
                 }
                 return $this->files;
 
@@ -58,11 +57,7 @@ class Commit
     private function loadMetadata()
     {
         if (!$this->metadata) {
-            $commitString = $this->repo->exec('git show -U5 --format=format:'.escapeshellarg(Metadata::LOG_FORMAT).' '.$this->sha);
-            if (!$commitString) {
-                throw new Exception('Log for commit "'.$this->sha.'"" not found');
-            }
-            $this->metadata = new Metadata($commitString);
+            $this->metadata = $this->repo->commitMetadata($this->sha);
         }
     }
 

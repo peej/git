@@ -2,7 +2,7 @@
 
 namespace Git;
 
-class Repo
+class Repo implements Gittable
 {
     private $path;
     private $bare = true;
@@ -43,7 +43,32 @@ class Repo
         }
     }
 
-    public function exec($command)
+    public function setUser($name, $email)
+    {
+        $this->exec('git config --local user.name '.escapeshellarg($name));
+        $this->exec('git config --local user.email '.escapeshellarg($email));
+    }
+
+    public function setBranch($name = 'master')
+    {
+        $this->branch = $name;
+    }
+
+    public function createBranch($name)
+    {
+        $this->exec('git branch '.escapeshellarg($name));
+    }
+
+    public function deleteBranch($name, $mustBeMerged = true)
+    {
+        if ($mustBeMerged) {
+            $this->exec('git branch -d '.escapeshellarg($name));
+        } else {
+            $this->exec('git branch -D '.escapeshellarg($name));
+        }
+    }
+
+    private function exec($command)
     {
         $cwd = getcwd();
         chdir($this->path);
@@ -55,12 +80,71 @@ class Repo
         return join("\n", $output);
     }
 
-    public function setUser($name, $email)
+    public function catFile($sha)
     {
-        $this->exec('git config --local user.name '.escapeshellarg($name));
-        $this->exec('git config --local user.email '.escapeshellarg($email));
-        return true;
+        return $this->exec('git cat-file -p '.$sha);
     }
+
+    public function loadTree($sha)
+    {
+        $entries = array();
+        $treeString = $this->catFile($sha);
+        preg_match_all('/^[0-9]{6} (blob|tree) ([0-9a-f]{40})\t(.+)$/m', $treeString, $matches, PREG_SET_ORDER);
+        foreach ($matches as $entry) {
+            switch ($entry[1]) {
+                case 'blob':
+                    $entries[$entry[3]] = new Blob($this, $entry[2], $entry[3]);
+                    break;
+                case 'tree':
+                    $entries[$entry[3]] = new Tree($this, $entry[2], $entry[3]);
+                    break;
+            }
+        }
+        return $entries;
+    }
+
+    public function log($filename)
+    {
+        $log = $this->exec('git log --format=format:"%H" -- '.escapeshellarg($filename));
+        return explode("\n", $log);
+    }
+
+    public function files($sha)
+    {
+        $show = $this->exec('git show --pretty="format:" --name-only '.$sha);
+        return explode("\n", trim($show));
+    }
+
+    public function commitMetadata($sha)
+    {
+        $commitString = $this->exec('git show -U5 --format=format:'.escapeshellarg(Metadata::LOG_FORMAT).' '.$sha);
+        if (!$commitString) {
+            throw new Exception('Log for commit "'.$sha.'"" not found');
+        }
+        $parts = explode("\n", $commitString);
+        $metadata = explode(',', array_shift($parts));
+
+        $diff = array();
+        foreach(explode('diff --git', join("\n", $parts)) as $d) {
+            if ($d) {
+                preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
+                $diff[$matches[1] ?: $matches[2]] = $matches[3];
+            }
+        }
+
+        return new Metadata(
+            $metadata[0], // commit
+            $metadata[1] ? explode(' ', $metadata[1]) : array(), // parents
+            $metadata[2], // user
+            $metadata[3], // email
+            $metadata[4], // date
+            $metadata[5], // message
+            $diff //diff
+        );
+    }
+
+
+    # read
 
     public function tree($path = '.')
     {
@@ -77,6 +161,9 @@ class Repo
             $parent = join('/', $path);
             
             $tree = $this->tree($parent)[$directory];
+            if (!is_a($tree, 'Git\Tree')) {
+                $tree = null;
+            }
         }
         return $tree;
     }
@@ -127,6 +214,8 @@ class Repo
         }
         return $items;
     }
+
+    # write
 
     /**
      * Add a new file

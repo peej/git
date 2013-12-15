@@ -20,6 +20,11 @@ class Blob
         $this->filename = $filename;
     }
 
+    public function getContent()
+    {
+        return $this->__get('content');
+    }
+
     public function __toString()
     {
         return $this->__get('content');
@@ -29,7 +34,7 @@ class Blob
     {
         if ($key == 'content') {
             if (!$this->content) {
-                $this->content = $this->repo->exec('git cat-file -p '.$this->sha);
+                $this->content = $this->repo->catFile($this->sha);
             }
             return $this->content;
 
@@ -46,8 +51,8 @@ class Blob
     private function loadHistory()
     {
         if (!$this->history) {
-            $log = $this->repo->exec('git log --format=format:"%H" -- '.escapeshellarg($this->filename));
-            foreach (explode("\n", $log) as $sha) {
+            $shas = $this->repo->log($this->filename);
+            foreach ($shas as $sha) {
                 $this->history[] = new Commit($this->repo, $sha);
             }
         }

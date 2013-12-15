@@ -84,8 +84,11 @@ class RepoSpec extends ObjectBehavior
     public function it_can_list_a_tree()
     {
         $this->tree()['test.txt']->shouldBeAnInstanceOf('Git\Blob');
+        $this->tree()['numbers']->shouldBeAnInstanceOf('Git\Tree');
         $this->tree('numbers')['one.txt']->shouldBeAnInstanceOf('Git\Blob');
         $this->tree('numbers')['doesnt_exist.txt']->shouldBe(null);
+        $this->tree('numbers/one.txt')->shouldBe(null);
+        $this->tree('numbers/others/something/nothing')->shouldBe(null);
     }
 
     public function it_can_return_a_files_contents()
@@ -132,18 +135,38 @@ class RepoSpec extends ObjectBehavior
         $this->add('new.txt', 'new content');
         $sha = $this->save('new commit');
         $commit = $this->commit($sha);
-        $commit->diff['test.txt'][0]->shouldBe('1+new line');
-        $commit->diff['test.txt'][1]->shouldBe('2 test content');
-        $commit->diff['test.txt'][2]->shouldBe('3+another line');
-        $commit->diff['test.txt'][3]->shouldBe('4+one more');
-        $commit->diff['new.txt'][0]->shouldBe('1+new content');
+        $commit->diff['test.txt'][0]->shouldBe("1+new line\n");
+        $commit->diff['test.txt'][1]->shouldBe("2 test content\n");
+        $commit->diff['test.txt'][2]->shouldBe("3+another line\n");
+        $commit->diff['test.txt'][3]->shouldBe("4+one more\n");
+        $commit->diff['new.txt'][0]->shouldBe("1+new content\n");
         $sha = $this->update('test.txt', "new line\ntest content\none more\nnew line", 'another update');
         $commit = $this->commit($sha);
-        $commit->diff['test.txt'][0]->shouldBe('1 new line');
-        $commit->diff['test.txt'][1]->shouldBe('2 test content');
-        $commit->diff['test.txt'][2]->shouldBe('3-another line');
-        $commit->diff['test.txt'][3]->shouldBe('3 one more');
-        $commit->diff['test.txt'][4]->shouldBe('4+new line');
+        $commit->diff['test.txt'][0]->shouldBe("1 new line\n");
+        $commit->diff['test.txt'][1]->shouldBe("2 test content\n");
+        $commit->diff['test.txt'][2]->shouldBe("3-another line\n");
+        $commit->diff['test.txt'][3]->shouldBe("3 one more\n");
+        $commit->diff['test.txt'][4]->shouldBe("4+new line\n");
+    }
+
+    // the index
+
+    public function it_can_create_a_file_in_the_index()
+    {
+        $this->add('new.txt', 'new content')->shouldBe(true);
+        $this->index()->shouldBe(array('new.txt' => 'A'));
+    }
+
+    public function it_can_list_the_current_index()
+    {
+        $this->add('numbers/four.txt', 'four');
+        $this->add('foo/bar', 'foobar');
+        $this->remove('test.txt');
+        $this->update('numbers/one.txt', "one\n\none one one");
+        $this->index()['numbers/four.txt']->shouldBe('A');
+        $this->index()['foo/bar']->shouldBe('A');
+        $this->index()['test.txt']->shouldBe('D');
+        $this->index()['numbers/one.txt']->shouldBe('M');
     }
 
     // modification
@@ -184,7 +207,7 @@ class RepoSpec extends ObjectBehavior
 
     public function it_creates_commits_using_the_given_user_details()
     {
-        $this->setUser('John Doe', 'johndoe@example.com')->shouldBe(true);
+        $this->setUser('John Doe', 'johndoe@example.com');
         $this->add('new.txt', 'new content', 'create a file')->shouldBeSha();
         $this->file('new.txt')->shouldBeLike('new content');
         $this->add('new2.txt', 'more content', 'create another file')->shouldBeSha();
@@ -193,15 +216,15 @@ class RepoSpec extends ObjectBehavior
         $this->file('new.txt')->date->shouldBeInteger();
     }
 
-    public function it_can_list_the_current_index()
+    public function it_creates_commits_on_the_given_branch()
     {
-        $this->add('numbers/four.txt', 'four');
-        $this->add('foo/bar', 'foobar');
-        $this->remove('test.txt');
-        $this->update('numbers/one.txt', "one\n\none one one");
-        $this->index()['numbers/four.txt']->shouldBe('A');
-        $this->index()['foo/bar']->shouldBe('A');
-        $this->index()['test.txt']->shouldBe('D');
-        $this->index()['numbers/one.txt']->shouldBe('M');
+        $this->createBranch('other');
+        $this->setBranch('other');
+        $this->add('new.txt', 'new content', 'create a file')->shouldBeSha();
+        $this->file('new.txt')->shouldBeLike('new content');
+        $this->setBranch('master');
+        $this->shouldThrow('Git\Exception')->duringFile('new.txt');
+        $this->setBranch('other');
+        $this->file('new.txt')->shouldBeLike('new content');
     }
 }
