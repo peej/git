@@ -121,6 +121,7 @@ class RepoSpec extends ObjectBehavior
 
     public function it_can_list_a_commit()
     {
+        $this->commit()->sha->shouldBeSha();
         $this->commit()->message->shouldBe('initial commit');
         $this->commit()->files->shouldContain('numbers/one.txt');
         $sha = $this->add('new.txt', 'new content', 'create a file');

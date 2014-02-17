@@ -14,7 +14,7 @@ class Commit
     public function __construct($repo, $sha)
     {
         $this->repo = $repo;
-        $this->sha = $sha;
+        $this->sha = $repo->dereference($sha);
     }
 
     public function __toString()

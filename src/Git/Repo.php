@@ -34,13 +34,21 @@ class Repo implements Gittable
     private function refFilename($reference = null)
     {
         if (!$reference) {
-            $reference = $this->branch;
+            $reference = 'refs/heads/'.$this->branch;
         }
         if ($this->bare) {
-            return 'refs/heads/'.$reference;
+            return $reference;
         } else {
-            return '.git/refs/heads/'.$reference;
+            return '.git/'.$reference;
         }
+    }
+
+    public function dereference($reference)
+    {
+        if (strlen($reference) != 40 && substr($reference, 0, 5) == 'refs/') {
+            $reference = trim(file_get_contents($this->path.'/'.$this->refFilename($reference)));
+        }
+        return $reference;
     }
 
     public function setUser($name, $email)
