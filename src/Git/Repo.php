@@ -45,7 +45,7 @@ class Repo implements Gittable
 
     public function dereference($reference)
     {
-        if (strlen($reference) != 40 && substr($reference, 0, 5) == 'refs/') {
+        if (substr($reference, 0, 5) == 'refs/') {
             $reference = trim(file_get_contents($this->path.'/'.$this->refFilename($reference)));
         }
         return $reference;
