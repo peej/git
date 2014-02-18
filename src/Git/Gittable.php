@@ -5,6 +5,13 @@ namespace Git;
 interface Gittable
 {
     /**
+     * Dereference a reference into a SHA
+     * @param str $reference
+     * @return str SHA
+     */
+    public function dereference($reference);
+
+    /**
      * Set the internal branch pointer to the given branch name
      * @param $name
      */

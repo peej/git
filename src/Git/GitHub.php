@@ -29,6 +29,14 @@ class GitHub implements Gittable
         return $response;
     }
 
+    public function dereference($reference)
+    {
+        if (substr($reference, 0, 5) == 'refs/') {
+            $reference = $this->exec('/git/'.$reference, 'GET');
+        }
+        return $reference;
+    }
+
     public function setBranch($name = 'master')
     {
         $this->branch = $name;
@@ -36,7 +44,7 @@ class GitHub implements Gittable
     
     public function createBranch($name) {
         try {
-            $this->exec('/git/refs/heads/'.$name, 'GET'); die;
+            $this->exec('/git/refs/heads/'.$name, 'GET');
         } catch (Exception $e) {
             if ($e->getCode() == 404) {
                 $ref = $this->exec('/git/refs/heads/'.$this->branch);
