@@ -44,7 +44,7 @@ class RepoSpec extends ObjectBehavior
 
     public function letgo()
     {
-        #$this->removeDir('/tmp/git.git');
+        $this->removeDir('/tmp/git.git');
     }
 
     private function removeDir($dir)
