@@ -32,7 +32,9 @@ class RepoSpec extends ObjectBehavior
             'git update-index --add --cacheinfo 100644 $1 test.txt',
             'git write-tree',
             'echo "initial commit" | git commit-tree $1',
-            'echo "$1" > '.$refMaster
+            'echo "$1" > '.$refMaster,
+            'git branch feature',
+            'git tag tag'
         ) as $command) {
             if (isset($output)) {
                 $command = str_replace('$1', $output, $command);
@@ -44,7 +46,7 @@ class RepoSpec extends ObjectBehavior
 
     public function letgo()
     {
-        #$this->removeDir('/tmp/git.git');
+        $this->removeDir($this->useBare ? '/tmp/git.git' : '/tmp/git');
     }
 
     private function removeDir($dir)
@@ -227,5 +229,20 @@ class RepoSpec extends ObjectBehavior
         $this->shouldThrow('Git\Exception')->duringFile('new.txt');
         $this->setBranch('other');
         $this->file('new.txt')->shouldBeLike('new content');
+    }
+
+    public function it_should_list_branches()
+    {
+        $this->getBranches()->shouldBe(array(
+            'feature',
+            'master'
+        ));
+    }
+
+    public function it_should_list_tags()
+    {
+        $this->getTags()->shouldBe(array(
+            'tag'
+        ));
     }
 }

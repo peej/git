@@ -57,6 +57,29 @@ class Repo implements Gittable
         $this->exec('git config --local user.email '.escapeshellarg($email));
     }
 
+    private function getRefNames($type)
+    {
+        $glob = '/refs/'.$type.'/*';
+        if (!$this->bare) {
+            $glob = '/.git'.$glob;
+        }
+        $refs = array();
+        foreach (glob($this->path.$glob) as $ref) {
+            $refs[] = basename($ref);
+        }
+        return $refs;
+    }
+
+    public function getBranches()
+    {
+        return $this->getRefNames('heads');
+    }
+
+    public function getTags()
+    {
+        return $this->getRefNames('tags');
+    }
+
     public function setBranch($name = 'master')
     {
         $this->branch = $name;
@@ -291,5 +314,4 @@ class Repo implements Gittable
         $this->exec('echo "'.$sha.'" > '.escapeshellarg($this->refFilename()));
         return $sha;
     }
-
 }
