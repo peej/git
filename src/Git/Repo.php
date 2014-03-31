@@ -116,18 +116,19 @@ class Repo implements Gittable
         return $this->exec('git cat-file -p '.$sha);
     }
 
-    public function loadTree($sha)
+    public function loadTree($sha, $path = '')
     {
         $entries = array();
         $treeString = $this->catFile($sha);
         preg_match_all('/^[0-9]{6} (blob|tree) ([0-9a-f]{40})\t(.+)$/m', $treeString, $matches, PREG_SET_ORDER);
+        $path = $path ? $path.'/' : '';
         foreach ($matches as $entry) {
             switch ($entry[1]) {
                 case 'blob':
-                    $entries[$entry[3]] = new Blob($this, $entry[2], $entry[3]);
+                    $entries[$entry[3]] = new Blob($this, $entry[2], $path.$entry[3]);
                     break;
                 case 'tree':
-                    $entries[$entry[3]] = new Tree($this, $entry[2], $entry[3]);
+                    $entries[$entry[3]] = new Tree($this, $entry[2], $path.$entry[3]);
                     break;
             }
         }

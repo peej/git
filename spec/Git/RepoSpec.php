@@ -101,14 +101,17 @@ class RepoSpec extends ObjectBehavior
 
     public function it_can_list_the_history_of_a_file()
     {
-        $this->add('new.txt', 'new content', 'create a file');
-        $this->update('new.txt', 'newer content', 'update a file');
+        $this->add('dir/new.txt', 'new content', 'create a file');
+        $this->update('dir/new.txt', 'newer content', 'update a file');
         $this->add('something-else.txt', 'something else', 'create another file');
         $this->remove('something-else.txt', 'delete another file');
-        $newFile = $this->file('new.txt');
+        $this->add('anotherthing.txt', 'another thing', 'and another');
+        $newFile = $this->file('dir/new.txt');
         $newFile->history[0]->shouldBeAnInstanceOf('Git\Commit');
         $newFile->history[0]->message->shouldBe('update a file');
         $newFile->history[1]->message->shouldBe('create a file');
+        $newFile2 = $this->file('anotherthing.txt');
+        $newFile2->history[0]->message->shouldBe('and another');
     }
 
     // commits

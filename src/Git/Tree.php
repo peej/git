@@ -22,7 +22,7 @@ class Tree implements \Iterator, \ArrayAccess
     private function loadEntries()
     {
         if (!$this->entries) {
-            $this->entries = $this->repo->loadTree($this->sha);
+            $this->entries = $this->repo->loadTree($this->sha, $this->filename);
             $this->entriesArray = array_values($this->entries);
         }
     }
