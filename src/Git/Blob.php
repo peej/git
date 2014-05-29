@@ -22,7 +22,21 @@ class Blob
 
     public function getContent()
     {
-        return $this->__get('content');
+        if (!$this->content) {
+            $this->content = $this->repo->catFile($this->sha);
+        }
+        return $this->content;
+    }
+    
+    public function getHistory()
+    {
+        if (!$this->history) {
+            $shas = $this->repo->log($this->filename);
+            foreach ($shas as $sha) {
+                $this->history[] = new Commit($this->repo, $sha);
+            }
+        }
+        return $this->history;
     }
 
     public function __toString()
@@ -33,28 +47,11 @@ class Blob
     public function __get($key)
     {
         if ($key == 'content') {
-            if (!$this->content) {
-                $this->content = $this->repo->catFile($this->sha);
-            }
-            return $this->content;
-
+            return $this->getContent();
         } elseif ($key == 'history') {
-            $this->loadHistory();
-            return $this->history;
-
+            return $this->getHistory();
         } else {
-            $this->loadHistory();
-            return $this->history[0]->$key;
-        }
-    }
-
-    private function loadHistory()
-    {
-        if (!$this->history) {
-            $shas = $this->repo->log($this->filename);
-            foreach ($shas as $sha) {
-                $this->history[] = new Commit($this->repo, $sha);
-            }
+            return $this->getHistory()[0]->$key;
         }
     }
 

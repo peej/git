@@ -22,13 +22,42 @@ class Commit
         return $this->sha;
     }
 
+    public function setTree($tree)
+    {
+        $this->tree = $tree;
+    }
+
     public function __set($name, $value)
     {
         switch ($name) {
             case 'tree':
-                $this->tree = $value;
+                $this->setTree($value);
                 break;
         }
+    }
+
+    public function getTree()
+    {
+        if (!is_a($this->tree, 'Tree')) {
+            $this->tree = new Tree($this->repo, $this->tree);
+        }
+        return $this->tree;
+    }
+
+    public function getFiles()
+    {
+        if (!$this->files) {
+            $this->files = $this->repo->files($this->sha);
+        }
+        return $this->files;
+    }
+
+    public function getMetadata($key)
+    {
+        if (!$this->metadata) {
+            $this->metadata = $this->repo->commitMetadata($this->sha);
+        }
+        return $this->metadata->$key;
     }
 
     public function __get($key)
@@ -36,28 +65,14 @@ class Commit
         switch ($key) {
 
             case 'tree':
-                if (!is_a($this->tree, 'Tree')) {
-                    $this->tree = new Tree($this->repo, $this->tree);
-                }
-                return $this->tree;
+                return $this->getTree();
 
             case 'files':
-                if (!$this->files) {
-                    $this->files = $this->repo->files($this->sha);
-                }
-                return $this->files;
+                return $this->getFiles();
 
             default:
-                $this->loadMetadata();
-                return $this->metadata->$key;
+                return $this->getMetadata($key);
 
-        }
-    }
-
-    private function loadMetadata()
-    {
-        if (!$this->metadata) {
-            $this->metadata = $this->repo->commitMetadata($this->sha);
         }
     }
 
