@@ -90,6 +90,11 @@ class Repo implements Gittable
         $this->exec('git branch '.escapeshellarg($name));
     }
 
+    public function renameBranch($oldName, $newName)
+    {
+        $this->exec('git branch -m '.escapeshellarg($oldName).' '.escapeshellarg($newName));
+    }
+
     public function deleteBranch($name, $mustBeMerged = true)
     {
         if ($mustBeMerged) {
@@ -160,7 +165,9 @@ class Repo implements Gittable
         foreach(explode('diff --git', join("\n", $parts)) as $d) {
             if ($d) {
                 preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
-                $diff[$matches[1] ?: $matches[2]] = $matches[3];
+                if (count($matches) == 4) {
+                    $diff[$matches[1] ?: $matches[2]] = $matches[3];
+                }
             }
         }
 

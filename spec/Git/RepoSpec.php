@@ -254,6 +254,15 @@ class RepoSpec extends ObjectBehavior
         ));
     }
 
+    public function it_should_rename_a_branch()
+    {
+        $this->renameBranch('feature', 'new');
+        $this->getBranches()->shouldBe(array(
+            'master',
+            'new'
+        ));
+    }
+
     public function it_should_list_tags()
     {
         $this->getTags()->shouldBe(array(
