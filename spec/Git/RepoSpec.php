@@ -234,11 +234,23 @@ class RepoSpec extends ObjectBehavior
         $this->file('new.txt')->shouldBeLike('new content');
     }
 
+    // branches
+
     public function it_should_list_branches()
     {
         $this->getBranches()->shouldBe(array(
             'feature',
             'master'
+        ));
+    }
+
+    public function it_should_create_a_branch()
+    {
+        $this->createBranch('new');
+        $this->getBranches()->shouldBe(array(
+            'feature',
+            'master',
+            'new'
         ));
     }
 
