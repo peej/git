@@ -8,45 +8,54 @@ date_default_timezone_set('UTC');
 
 class RepoSpec extends ObjectBehavior
 {
-    private $useBare = false;
+    private $useBare = true;
+    private $repoPath, $refHeads;
 
-    public function let()
+    private function execCommands($cmds)
     {
-        $repoPath = $this->useBare ? '/tmp/git.git' : '/tmp/git';
-        $this->beConstructedWith($repoPath);
-        $this->removeDir($repoPath);
-        mkdir($repoPath);
         $cwd = getcwd();
-        chdir($repoPath);
-
-        $init = $this->useBare ? 'git init --bare' : 'git init';
-        $refMaster = $this->useBare ? 'refs/heads/master' : '.git/refs/heads/master';
-
-        foreach (array(
-            $init,
-            'echo "one" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 $1 numbers/one.txt',
-            'echo "two" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 $1 numbers/two.txt',
-            'echo "test content" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 $1 test.txt',
-            'git write-tree',
-            'echo "initial commit" | git commit-tree $1',
-            'echo "$1" > '.$refMaster,
-            'git branch feature',
-            'git tag tag'
-        ) as $command) {
-            if (isset($output)) {
-                $command = str_replace('$1', $output, $command);
+        chdir($this->repoPath);
+        $output = array();
+        foreach ($cmds as $command) {
+            foreach ($output as $key => $response) {
+                $command = str_replace('{'.$key.'}', $response, $command);
             }
-            $output = exec($command);
+            $output[] = exec($command.' 2>/dev/null');
         }
         chdir($cwd);
     }
 
+    public function let()
+    {
+        $this->removeDir($this->repoPath);
+
+        $this->repoPath = $this->useBare ? '/tmp/git.git' : '/tmp/git';
+        $this->beConstructedWith($this->repoPath);
+        $this->removeDir($this->repoPath);
+        mkdir($this->repoPath);
+        
+        $init = $this->useBare ? 'git init --bare' : 'git init';
+        $this->refHeads = $this->useBare ? 'refs/heads/' : '.git/refs/heads/';
+
+        $this->execCommands(array(
+            $init,
+            'echo "one" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {1} numbers/one.txt',
+            'echo "two" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {3} numbers/two.txt',
+            'echo "test content" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {5} test.txt',
+            'git write-tree',
+            'echo "initial commit" | git commit-tree {7}',
+            'echo "{8}" > '.$this->refHeads.'master',
+            'git branch feature',
+            'git tag tag'
+        ));
+    }
+
     public function letgo()
     {
-        $this->removeDir($this->useBare ? '/tmp/git.git' : '/tmp/git');
+        #$this->removeDir($this->repoPath);
     }
 
     private function removeDir($dir)
