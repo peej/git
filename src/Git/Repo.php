@@ -85,6 +85,18 @@ class Repo implements Gittable
         $this->branch = $name;
     }
 
+    private function exec($command)
+    {
+        $cwd = getcwd();
+        chdir($this->path);
+        $out = exec($command.' 2>&1', $output, $return);
+        chdir($cwd);
+        if ($return != 0) {
+            throw new Exception('Git binary returned an error "'.$out.'"');
+        }
+        return join("\n", $output);
+    }
+
     public function createBranch($name)
     {
         $this->exec('git branch '.escapeshellarg($name));
@@ -104,16 +116,31 @@ class Repo implements Gittable
         }
     }
 
-    private function exec($command)
+    public function canMerge($branch1, $branch2)
     {
-        $cwd = getcwd();
-        chdir($this->path);
-        $out = exec($command.' 2>&1', $output, $return);
-        chdir($cwd);
-        if ($return != 0) {
-            throw new Exception('Git binary returned an error "'.$out.'"');
+        $sha = $this->exec('git merge-base '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
+        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
+        return !preg_match('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge);
+    }
+
+    public function mergeConflicts($branch1, $branch2)
+    {
+        $sha = $this->exec('git merge-base '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
+        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
+        preg_match_all('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames);
+        if (isset($filenames[1]) && $filenames[1]) {
+            $diffs = array();
+            foreach ($filenames[1] as $filename) {
+                $d = $this->exec('git diff '.escapeshellarg($branch1).' '.escapeshellarg($branch2).' -- '.$filename);
+                preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
+                if (count($matches) == 4) {
+                    $diffs[$matches[1] ?: $matches[2]] = $matches[3];
+                }
+            }
+            $diff = new Diff($diffs);
+            return $diff->diff;
         }
-        return join("\n", $output);
+        return null;
     }
 
     public function catFile($sha)

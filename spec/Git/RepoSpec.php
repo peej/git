@@ -278,4 +278,60 @@ class RepoSpec extends ObjectBehavior
             'tag'
         ));
     }
+
+    public function it_should_know_when_a_branch_can_be_merged()
+    {
+        $this->execCommands(array(
+            'cat '.$this->refHeads.'master',
+            'echo "three" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {1} numbers/three.txt',
+            'git write-tree',
+            'echo "added three" | git commit-tree -p {0} {3}',
+            'echo "{4}" > '.$this->refHeads.'master',
+            'git checkout feature',
+            'echo "four" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {7} numbers/four.txt',
+            'git write-tree',
+            'echo "added four" | git commit-tree -p {0} {9}',
+            'echo "{10}" > '.$this->refHeads.'feature'
+        ));
+
+        $this->canMerge('master', 'feature')->shouldBe(true);
+        $this->mergeConflicts('master', 'feature')->shouldBe(null);
+    }
+
+    public function it_should_know_if_a_branch_can_not_be_merged()
+    {
+        $this->execCommands(array(
+            'cat '.$this->refHeads.'master',
+            'echo "three" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {1} numbers/three.txt',
+            'echo "a new line at the start\ntest content" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {3} test.txt',
+            'git write-tree',
+            'echo "added three" | git commit-tree -p {0} {5}',
+            'echo "{6}" > '.$this->refHeads.'master',
+            'git checkout feature',
+            'echo "3" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {9} numbers/three.txt',
+            'echo "test content\na new line at the end" | git hash-object -w --stdin',
+            'git update-index --add --cacheinfo 100644 {11} test.txt',
+            'git write-tree',
+            'echo "added 3" | git commit-tree -p {0} {13}',
+            'echo "{14}" > '.$this->refHeads.'feature'
+        ));
+
+        $this->canMerge('master', 'feature')->shouldBe(false);
+        $this->mergeConflicts('master', 'feature')->shouldBe(array(
+            'numbers/three.txt' => array(
+                "1-three\n",
+                "1+3\n"
+            ),
+            'test.txt' => array(
+                "1-a new line at the start\n",
+                "1 test content\n",
+                "2+a new line at the end\n"
+            )
+        ));
+    }
 }
