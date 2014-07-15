@@ -110,33 +110,6 @@ class Repo implements Gittable
         }
     }
 
-    public function canMerge($branch1, $branch2)
-    {
-        $sha = $this->exec('git merge-base '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
-        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
-        return !preg_match('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge);
-    }
-
-    public function mergeConflicts($branch1, $branch2)
-    {
-        $sha = $this->exec('git merge-base '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
-        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($branch1).' '.escapeshellarg($branch2));
-        preg_match_all('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames);
-        if (isset($filenames[1]) && $filenames[1]) {
-            $diffs = array();
-            foreach ($filenames[1] as $filename) {
-                $d = $this->exec('git diff '.escapeshellarg($branch1).' '.escapeshellarg($branch2).' -- '.$filename);
-                preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
-                if (count($matches) == 4) {
-                    $diffs[$matches[1] ?: $matches[2]] = $matches[3];
-                }
-            }
-            $diff = new Diff($diffs);
-            return $diff->diff;
-        }
-        return null;
-    }
-
     public function catFile($sha)
     {
         return $this->exec('git cat-file -p '.$sha);
@@ -342,4 +315,62 @@ class Repo implements Gittable
         $this->exec('git update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
         return $sha;
     }
+
+    # merging
+
+    public function canMerge($branch)
+    {
+        $sha = $this->exec('git merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        return !preg_match('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge);
+    }
+
+    public function mergeConflicts($branch)
+    {
+        $sha = $this->exec('git merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        preg_match_all('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames);
+        if (isset($filenames[1]) && $filenames[1]) {
+            $diffs = array();
+            foreach ($filenames[1] as $filename) {
+                $d = $this->exec('git diff '.escapeshellarg($this->branch).' '.escapeshellarg($branch).' -- '.$filename);
+                preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
+                if (count($matches) == 4) {
+                    $diffs[$matches[1] ?: $matches[2]] = $matches[3];
+                }
+            }
+            $diff = new Diff($diffs);
+            return $diff->diff;
+        }
+        return null;
+    }
+
+    /**
+     * Execute a merge
+     */
+    public function merge($branch, $commitMessage = null)
+    {
+        if ($this->index()) {
+            throw new Exception('Can not merge with dirty index');
+        }
+        $parent1Sha = $this->dereference($this->branch);
+        $parent2Sha = $this->dereference($branch);
+        if (!$this->canMerge($branch)) {
+            throw new Exception('Can not merge branches without conflict, resolve conflicts first');
+        }
+
+        if (!$commitMessage) {
+            $commitMessage = 'Merge '.$branch.' into '.$this->branch;
+        }
+
+        $baseSha = $this->exec('git merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $this->exec('git read-tree -m -i '.escapeshellarg($baseSha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $sha = $this->exec('git write-tree');
+        
+        $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | git commit-tree -p '.$parent1Sha.' -p '.$parent2Sha.' '.$sha);
+
+        $this->exec('git update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
+        return $sha;
+    }
+
 }

@@ -286,17 +286,22 @@ class RepoSpec extends ObjectBehavior
             'git update-index --add --cacheinfo 100644 {1} numbers/three.txt',
             'git write-tree',
             'echo "added three" | git commit-tree -p {0} {3}',
-            'echo "{4}" > '.$this->refHeads.'master',
-            'git checkout feature',
+            'git update-ref refs/heads/feature {4}',
+            'cat '.$this->refHeads.'feature',
             'echo "four" | git hash-object -w --stdin',
             'git update-index --add --cacheinfo 100644 {7} numbers/four.txt',
             'git write-tree',
-            'echo "added four" | git commit-tree -p {0} {9}',
-            'echo "{10}" > '.$this->refHeads.'feature'
+            'echo "added four" | git commit-tree -p {6} {9}',
+            'git update-ref refs/heads/feature {10}',
+            'git read-tree refs/heads/master'
         ));
-
-        $this->canMerge('master', 'feature')->shouldBe(true);
-        $this->mergeConflicts('master', 'feature')->shouldBe(null);
+        $this->setBranch('master');
+        
+        $this->canMerge('feature')->shouldBe(true);
+        $this->mergeConflicts('feature')->shouldBe(null);
+        $this->merge('feature');
+        $mergeCommit = $this->commit();
+        $mergeCommit->message->shouldBe('Merge feature into master');
     }
 
     public function it_should_know_if_a_branch_can_not_be_merged()
@@ -309,19 +314,21 @@ class RepoSpec extends ObjectBehavior
             'git update-index --add --cacheinfo 100644 {3} test.txt',
             'git write-tree',
             'echo "added three" | git commit-tree -p {0} {5}',
-            'echo "{6}" > '.$this->refHeads.'master',
-            'git checkout feature',
+            'git update-ref refs/heads/master {6}',
+            'git read-tree refs/heads/feature',
             'echo "3" | git hash-object -w --stdin',
             'git update-index --add --cacheinfo 100644 {9} numbers/three.txt',
             'echo "test content\na new line at the end" | git hash-object -w --stdin',
             'git update-index --add --cacheinfo 100644 {11} test.txt',
             'git write-tree',
             'echo "added 3" | git commit-tree -p {0} {13}',
-            'echo "{14}" > '.$this->refHeads.'feature'
+            'git update-ref refs/heads/feature {14}',
+            'git read-tree refs/heads/master'
         ));
+        $this->setBranch('master');
 
-        $this->canMerge('master', 'feature')->shouldBe(false);
-        $this->mergeConflicts('master', 'feature')->shouldBe(array(
+        $this->canMerge('feature')->shouldBe(false);
+        $this->mergeConflicts('feature')->shouldBe(array(
             'numbers/three.txt' => array(
                 "1-three\n",
                 "1+3\n"
@@ -332,5 +339,7 @@ class RepoSpec extends ObjectBehavior
                 "2+a new line at the end\n"
             )
         ));
+        $this->shouldThrow('Exception')->duringMerge('feature');
     }
+
 }
