@@ -31,24 +31,29 @@ class Repo implements Gittable
         }
     }
 
-    private function refFilename($reference = null)
+    private function exec($command)
     {
-        if (!$reference) {
-            $reference = 'refs/heads/'.$this->branch;
+        $cwd = getcwd();
+        chdir($this->path);
+        $out = exec($command.' 2>&1', $output, $return);
+        chdir($cwd);
+        if ($return != 0) {
+            throw new Exception('Git binary returned an error "'.$out.'"');
         }
-        if ($this->bare) {
-            return $reference;
-        } else {
-            return '.git/'.$reference;
-        }
+        return join("\n", $output);
     }
 
     public function dereference($reference)
     {
-        if (substr($reference, 0, 5) == 'refs/') {
-            $reference = trim(file_get_contents($this->path.'/'.$this->refFilename($reference)));
+        if (preg_match('/^[a-f0-9]{40}$/', $reference)) {
+            $sha = $reference;
+        } else {
+            $sha = $this->exec('git show-ref --heads -s '.escapeshellarg($reference));
+            if (!$sha) {
+                throw new Exception('Could not dereference '.$reference);
+            }
         }
-        return $reference;
+        return $sha;
     }
 
     public function setUser($name, $email)
@@ -83,18 +88,7 @@ class Repo implements Gittable
     public function setBranch($name = 'master')
     {
         $this->branch = $name;
-    }
-
-    private function exec($command)
-    {
-        $cwd = getcwd();
-        chdir($this->path);
-        $out = exec($command.' 2>&1', $output, $return);
-        chdir($cwd);
-        if ($return != 0) {
-            throw new Exception('Git binary returned an error "'.$out.'"');
-        }
-        return join("\n", $output);
+        $this->exec('git read-tree refs/heads/'.escapeshellarg($name));
     }
 
     public function createBranch($name)
@@ -339,14 +333,13 @@ class Repo implements Gittable
     public function save($commitMessage)
     {
         $sha = $this->exec('git write-tree');
-        $headRefFilename = $this->path.'/'.$this->refFilename();
-        if (file_exists($headRefFilename)) {
-            $parentSha = trim(file_get_contents($headRefFilename));
+        try {
+            $parentSha = $this->dereference($this->branch);
             $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | git commit-tree -p '.$parentSha.' '.$sha);
-        } else {
+        } catch (Exception $e) {
             $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | git commit-tree '.$sha);
         }
-        $this->exec('echo "'.$sha.'" > '.escapeshellarg($this->refFilename()));
+        $this->exec('git update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
         return $sha;
     }
 }
