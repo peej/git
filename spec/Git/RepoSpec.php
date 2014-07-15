@@ -27,8 +27,6 @@ class RepoSpec extends ObjectBehavior
 
     public function let()
     {
-        $this->removeDir($this->repoPath);
-
         $this->repoPath = $this->useBare ? '/tmp/git.git' : '/tmp/git';
         $this->beConstructedWith($this->repoPath);
         $this->removeDir($this->repoPath);
@@ -55,7 +53,7 @@ class RepoSpec extends ObjectBehavior
 
     public function letgo()
     {
-        #$this->removeDir($this->repoPath);
+        $this->removeDir($this->repoPath);
     }
 
     private function removeDir($dir)
