@@ -88,7 +88,6 @@ class Repo implements Gittable
     public function setBranch($name = 'master')
     {
         $this->branch = $name;
-        $this->exec('git read-tree refs/heads/'.escapeshellarg($name));
     }
 
     public function createBranch($name)
@@ -248,6 +247,11 @@ class Repo implements Gittable
         return $items;
     }
 
+    public function resetIndex()
+    {
+        $this->exec('git read-tree refs/heads/'.escapeshellarg($this->branch));
+    }
+
     # write
 
     /**
@@ -313,6 +317,7 @@ class Repo implements Gittable
             $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | git commit-tree '.$sha);
         }
         $this->exec('git update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
+        $this->resetIndex();
         return $sha;
     }
 

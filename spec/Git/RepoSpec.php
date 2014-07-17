@@ -236,6 +236,7 @@ class RepoSpec extends ObjectBehavior
         $this->add('new.txt', 'new content', 'create a file')->shouldBeSha();
         $this->file('new.txt')->shouldBeLike('new content');
         $this->setBranch('master');
+        $this->resetIndex();
         $this->shouldThrow('Git\Exception')->duringFile('new.txt');
         $this->index()->shouldBe(array());
         $this->setBranch('other');
