@@ -328,7 +328,7 @@ class RepoSpec extends ObjectBehavior
         ));
         $this->setBranch('master');
 
-        $this->canMerge('feature')->shouldBe(false);
+        $this->shouldThrow('Exception')->duringCanMerge('feature');
         $this->mergeConflicts('feature')->shouldBe(array(
             'numbers/three.txt' => array(
                 "1-three\n",

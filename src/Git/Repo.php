@@ -327,25 +327,35 @@ class Repo implements Gittable
     {
         $sha = $this->exec('git merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
         $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
-        return !preg_match('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge);
+        if ($merge == '') {
+            throw new Exception('Base branch already contains everything in head branch, nothing to merge');
+        } elseif (preg_match_all('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames)) {
+            $e = new Exception('Can not merge branches without conflict, resolve conflicts first');
+            if (isset($filenames[1]) && $filenames[1]) {
+                $e->filenames = $filenames[1];
+            }
+            throw $e;
+        }
+        return true;
     }
 
     public function mergeConflicts($branch)
     {
-        $sha = $this->exec('git merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
-        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
-        preg_match_all('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames);
-        if (isset($filenames[1]) && $filenames[1]) {
-            $diffs = array();
-            foreach ($filenames[1] as $filename) {
-                $d = $this->exec('git diff '.escapeshellarg($this->branch).' '.escapeshellarg($branch).' -- '.$filename);
-                preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
-                if (count($matches) == 4) {
-                    $diffs[$matches[1] ?: $matches[2]] = $matches[3];
+        try {
+            $this->canMerge($branch);
+        } catch (Exception $e) {
+            if ($e->filenames) {
+                $diffs = array();
+                foreach ($e->filenames as $filename) {
+                    $d = $this->exec('git diff '.escapeshellarg($this->branch).' '.escapeshellarg($branch).' -- '.$filename);
+                    preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
+                    if (count($matches) == 4) {
+                        $diffs[$matches[1] ?: $matches[2]] = $matches[3];
+                    }
                 }
+                $diff = new Diff($diffs);
+                return $diff->diff;
             }
-            $diff = new Diff($diffs);
-            return $diff->diff;
         }
         return null;
     }
@@ -360,9 +370,8 @@ class Repo implements Gittable
         }
         $parent1Sha = $this->dereference($this->branch);
         $parent2Sha = $this->dereference($branch);
-        if (!$this->canMerge($branch)) {
-            throw new Exception('Can not merge branches without conflict, resolve conflicts first');
-        }
+        
+        $this->canMerge($branch);
 
         if (!$commitMessage) {
             $commitMessage = 'Merge '.$branch.' into '.$this->branch;
