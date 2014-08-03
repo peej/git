@@ -303,12 +303,15 @@ class RepoSpec extends ObjectBehavior
             'git read-tree refs/heads/master'
         ));
         $this->setBranch('master');
-        
         $this->canMerge('feature')->shouldBe(true);
         $this->mergeConflicts('feature')->shouldBe(null);
         $this->merge('feature');
+
         $mergeCommit = $this->commit();
         $mergeCommit->message->shouldBe('Merge feature into master');
+        $mergeCommit->parents->shouldBe(array(
+            $this->output[0], $this->output[10]
+        ));
     }
 
     public function it_should_know_if_a_branch_can_not_be_merged()
