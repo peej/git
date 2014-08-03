@@ -387,4 +387,41 @@ class Repo implements Gittable
         return $sha;
     }
 
+    /**
+     * Update the index to reverse a previous commit
+     */
+    public function revert($sha, $commitMessage = null)
+    {
+        if ($this->index()) {
+            throw new Exception('Can not revert with dirty index');
+        }
+
+        try {
+            $this->exec('git diff -R '.escapeshellarg($sha.'~1').' '.escapeshellarg($sha).' | git apply --index');
+        } catch (Exception $e) {
+            return false;
+        }
+
+        if ($commitMessage) {
+            return $this->save($commitMessage);
+        }
+        return true;
+    }
+
+    /**
+     * Update the index to undo back to a previous commit
+     */
+    public function undo($sha, $commitMessage = null)
+    {
+        if ($this->index()) {
+            throw new Exception('Can not revert with dirty index');
+        }
+
+        $this->exec('git diff -R --cached '.escapeshellarg($sha).' | git apply --index');
+
+        if ($commitMessage) {
+            return $this->save($commitMessage);
+        }
+        return true;
+    }
 }

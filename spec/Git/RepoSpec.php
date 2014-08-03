@@ -10,17 +10,23 @@ class RepoSpec extends ObjectBehavior
 {
     private $useBare = true;
     private $repoPath, $refHeads;
+    private $output = array(); // command exec output
+
+    private function execCommand($cmd)
+    {
+        return exec($cmd.' 2>/dev/null');
+    }
 
     private function execCommands($cmds)
     {
         $cwd = getcwd();
         chdir($this->repoPath);
-        $output = array();
+        $this->output = array();
         foreach ($cmds as $command) {
-            foreach ($output as $key => $response) {
+            foreach ($this->output as $key => $response) {
                 $command = str_replace('{'.$key.'}', $response, $command);
             }
-            $output[] = exec($command.' 2>/dev/null');
+            $this->output[] = $this->execCommand($command);
         }
         chdir($cwd);
     }
@@ -341,6 +347,34 @@ class RepoSpec extends ObjectBehavior
             )
         ));
         $this->shouldThrow('Exception')->duringMerge('feature');
+    }
+
+    public function it_should_be_able_to_undo_back_to_a_previous_commit()
+    {
+        $this->add('new.txt', 'new content', 'create a file');
+        $this->execCommands(array('git show-ref -s refs/heads/master'));
+        $sha = $this->output[0];
+        $this->update('new.txt', 'updated content', 'update a file');
+        $this->add('something.else.txt', 'something else unrelated', 'Add something else');
+
+        $this->file('new.txt')->shouldBeLike('updated content');
+        $this->undo($sha, 'Revert commit '.$sha)->shouldBeSha();
+        $this->file('new.txt')->shouldBeLike('new content');
+        $this->shouldThrow('Git\Exception')->duringFile('something.else.txt');
+    }
+
+    public function it_should_be_able_to_revert_a_previous_commit()
+    {
+        $this->add('new.txt', 'new content', 'create a file');
+        $this->update('new.txt', 'updated content', 'update a file');
+        $this->execCommands(array('git show-ref -s refs/heads/master'));
+        $sha = $this->output[0];
+        $this->add('something.else.txt', 'something else unrelated', 'Add something else');
+
+        $this->file('new.txt')->shouldBeLike('updated content');
+        $this->revert($sha, 'Revert commit '.$sha)->shouldBeSha();
+        $this->file('new.txt')->shouldBeLike('new content');
+        $this->file('something.else.txt')->shouldBeLike('something else unrelated');
     }
 
 }
