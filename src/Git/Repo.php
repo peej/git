@@ -344,7 +344,7 @@ class Repo implements Gittable
         try {
             $this->canMerge($branch);
         } catch (Exception $e) {
-            if ($e->filenames) {
+            if (isset($e->filenames)) {
                 $diffs = array();
                 foreach ($e->filenames as $filename) {
                     $d = $this->exec('git diff '.escapeshellarg($this->branch).' '.escapeshellarg($branch).' -- '.$filename);
