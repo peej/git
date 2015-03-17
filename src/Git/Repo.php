@@ -135,7 +135,7 @@ class Repo implements Gittable
 
     public function log($filename)
     {
-        $log = $this->exec('git log --format=format:"%H" -- '.escapeshellarg($filename));
+        $log = $this->exec('git log --format=format:"%H" refs/heads/'.escapeshellarg($this->branch).' -- '.escapeshellarg($filename));
         return explode("\n", $log);
     }
 
