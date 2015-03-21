@@ -61,11 +61,11 @@ class GitHubSpec extends ObjectBehavior
 
     public function getMatchers()
     {
-        return [
+        return array(
             'beSha' => function($subject) {
                 return preg_match('/^[0-9a-f]{40}$/', $subject);
             },
-        ];
+        );
     }
 
     public function it_is_initializable()
