@@ -288,19 +288,24 @@ class RepoSpec extends ObjectBehavior
     public function it_should_know_when_a_branch_can_be_merged()
     {
         $this->execCommands(array(
-            'cat '.$this->refHeads.'master',
-            'echo "three" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 {1} numbers/three.txt',
-            'git write-tree',
-            'echo "added three" | git commit-tree -p {0} {3}',
-            'git update-ref refs/heads/feature {4}',
-            'cat '.$this->refHeads.'feature',
-            'echo "four" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 {7} numbers/four.txt',
-            'git write-tree',
-            'echo "added four" | git commit-tree -p {6} {9}',
-            'git update-ref refs/heads/feature {10}',
-            'git read-tree refs/heads/master'
+            'cat '.$this->refHeads.'master', #0
+            'echo "three" | git hash-object -w --stdin', #1
+            'git update-index --add --cacheinfo 100644 {1} numbers/three.txt', #2
+            'git write-tree', #3
+            'echo "feature added three" | git commit-tree -p {0} {3}', #4
+            'git update-ref refs/heads/feature {4}', #5
+            'cat '.$this->refHeads.'feature', #6
+            'echo "four" | git hash-object -w --stdin', #7
+            'git update-index --add --cacheinfo 100644 {7} numbers/four.txt', #8
+            'git write-tree', #9
+            'echo "feature added four" | git commit-tree -p {6} {9}', #10
+            'git update-ref refs/heads/feature {10}', #11
+            'git read-tree refs/heads/master', #12
+            'echo "three" | git hash-object -w --stdin', #13
+            'git update-index --add --cacheinfo 100644 {13} numbers/three.txt', #14
+            'git write-tree', #15
+            'echo "master added three" | git commit-tree -p {0} {15}', #16
+            'git update-ref refs/heads/master {16}' #17
         ));
         $this->setBranch('master');
         $this->canMerge('feature')->shouldBe(true);
@@ -310,7 +315,7 @@ class RepoSpec extends ObjectBehavior
         $mergeCommit = $this->commit();
         $mergeCommit->message->shouldBe('Merge feature into master');
         $mergeCommit->parents->shouldBe(array(
-            $this->output[0], $this->output[10]
+            $this->output[16], $this->output[10]
         ));
     }
 

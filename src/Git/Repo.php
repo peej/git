@@ -329,7 +329,7 @@ class Repo implements Gittable
         $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
         if ($merge == '') {
             throw new Exception('Base branch already contains everything in head branch, nothing to merge');
-        } elseif (preg_match_all('/our +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames)) {
+        } elseif (preg_match_all('/in both\n *(?:base|our|their) +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames)) {
             $e = new Exception('Can not merge branches without conflict, resolve conflicts first');
             if (isset($filenames[1]) && $filenames[1]) {
                 $e->filenames = $filenames[1];
