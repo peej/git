@@ -42,21 +42,18 @@ class RepoSpec extends ObjectBehavior
         $this->refHeads = $this->useBare ? 'refs/heads/' : '.git/refs/heads/';
 
         $this->execCommands(array(
-            'git config user.name "John Doe"',
-            'git config user.email johndoe@example.com'
-        ));
-
-        $this->execCommands(array(
             $init,
+            'git config user.name "John Doe"',
+            'git config user.email johndoe@example.com',
             'echo "one" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 {1} numbers/one.txt',
+            'git update-index --add --cacheinfo 100644 {3} numbers/one.txt',
             'echo "two" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 {3} numbers/two.txt',
+            'git update-index --add --cacheinfo 100644 {5} numbers/two.txt',
             'echo "test content" | git hash-object -w --stdin',
-            'git update-index --add --cacheinfo 100644 {5} test.txt',
+            'git update-index --add --cacheinfo 100644 {7} test.txt',
             'git write-tree',
-            'echo "initial commit" | git commit-tree {7}',
-            'echo "{8}" > '.$this->refHeads.'master',
+            'echo "initial commit" | git commit-tree {9}',
+            'echo "{10}" > '.$this->refHeads.'master',
             'git branch feature',
             'git tag tag'
         ));
