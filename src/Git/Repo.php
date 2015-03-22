@@ -151,8 +151,14 @@ class Repo implements Gittable
         $parts = explode("\n", $commitString);
         $metadata = explode(',', array_shift($parts));
 
+        if ($parts) {
+            $diffString = join("\n", $parts);
+        } else {
+            $diffString = $this->exec('git diff -p '.$sha.'^1 '.$sha);
+        }
+
         $diff = array();
-        foreach(explode('diff --git', join("\n", $parts)) as $d) {
+        foreach(explode('diff --git', $diffString) as $d) {
             if ($d) {
                 preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
                 if (count($matches) == 4) {
