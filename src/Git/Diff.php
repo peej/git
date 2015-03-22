@@ -13,10 +13,7 @@ class Diff implements \ArrayAccess
             preg_match_all('#@@ -([0-9]+)(,[0-9]+)? \+([0-9]+)(,[0-9]+)? @@[^\n]*\n(.*)$#s', $patch, $matches, PREG_SET_ORDER);
             foreach ($matches as $match) {
                 $fromA = $match[1];
-                $toA = $match[2];
                 $fromB = $match[3];
-                $toB = $match[4];
-                $index = $fromA;
                 $lines = explode("\n", $match[5]);
                 foreach ($lines as $lnum => $line) {
                     if ($line != '\ No newline at end of file') {
@@ -28,17 +25,15 @@ class Diff implements \ArrayAccess
                         $operation = substr($line, 0, 1);
                         switch ($operation) {
                             case '+':
-                                $this->diff[$filename][] = $fromB.'+'.substr($line, 1).$nl;
-                                $index++;
+                                $this->diff[$filename][] = $fromB.',+ '.substr($line, 1).$nl;
                                 $fromB++;
                                 break;
                             case '-':
-                                $this->diff[$filename][] = $fromA.'-'.substr($line, 1).$nl;
+                                $this->diff[$filename][] = '-,'.$fromA.' '.substr($line, 1).$nl;
                                 $fromA++;
                                 break;
                             default:
-                                $this->diff[$filename][] = $index.' '.substr($line, 1).$nl;
-                                $index++;
+                                $this->diff[$filename][] = $fromB.','.$fromA.' '.substr($line, 1).$nl;
                                 $fromA++;
                                 $fromB++;
                                 break;
