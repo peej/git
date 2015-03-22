@@ -156,18 +156,18 @@ class RepoSpec extends ObjectBehavior
         $this->add('new.txt', 'new content');
         $sha = $this->save('new commit');
         $commit = $this->commit($sha);
-        $commit->diff['test.txt'][0]->shouldBe("1+new line\n");
-        $commit->diff['test.txt'][1]->shouldBe("2 test content\n");
-        $commit->diff['test.txt'][2]->shouldBe("3+another line\n");
-        $commit->diff['test.txt'][3]->shouldBe("4+one more\n");
-        $commit->diff['new.txt'][0]->shouldBe("1+new content\n");
+        $commit->diff['test.txt'][0]->shouldBe("1,+ new line\n");
+        $commit->diff['test.txt'][1]->shouldBe("2,1 test content\n");
+        $commit->diff['test.txt'][2]->shouldBe("3,+ another line\n");
+        $commit->diff['test.txt'][3]->shouldBe("4,+ one more\n");
+        $commit->diff['new.txt'][0]->shouldBe("1,+ new content\n");
         $sha = $this->update('test.txt', "new line\ntest content\none more\nnew line", 'another update');
         $commit = $this->commit($sha);
-        $commit->diff['test.txt'][0]->shouldBe("1 new line\n");
-        $commit->diff['test.txt'][1]->shouldBe("2 test content\n");
-        $commit->diff['test.txt'][2]->shouldBe("3-another line\n");
-        $commit->diff['test.txt'][3]->shouldBe("3 one more\n");
-        $commit->diff['test.txt'][4]->shouldBe("4+new line\n");
+        $commit->diff['test.txt'][0]->shouldBe("1,1 new line\n");
+        $commit->diff['test.txt'][1]->shouldBe("2,2 test content\n");
+        $commit->diff['test.txt'][2]->shouldBe("-,3 another line\n");
+        $commit->diff['test.txt'][3]->shouldBe("3,4 one more\n");
+        $commit->diff['test.txt'][4]->shouldBe("4,+ new line\n");
     }
 
     // the index
@@ -347,13 +347,13 @@ class RepoSpec extends ObjectBehavior
         $this->shouldThrow('Exception')->duringCanMerge('feature');
         $this->mergeConflicts('feature')->shouldBe(array(
             'numbers/three.txt' => array(
-                "1-three\n",
-                "1+3\n"
+                "-,1 three\n",
+                "1,+ 3\n"
             ),
             'test.txt' => array(
-                "1-a new line at the start\n",
-                "1 test content\n",
-                "2+a new line at the end\n"
+                "-,1 a new line at the start\n",
+                "1,2 test content\n",
+                "2,+ a new line at the end\n"
             )
         ));
         $this->shouldThrow('Exception')->duringMerge('feature');

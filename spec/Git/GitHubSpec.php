@@ -117,10 +117,10 @@ class GitHubSpec extends ObjectBehavior
     public function it_can_return_the_differences_a_commit_contains()
     {
         $commit = $this->commit();
-        $commit->diff['history.txt'][0]->shouldBe('1-Test the history of a file');
-        $commit->diff['history.txt'][1]->shouldBe("1+Test the history of a file\n");
-        $commit->diff['history.txt'][2]->shouldBe("2+\n");
-        $commit->diff['history.txt'][3]->shouldBe('3+By adding new lines to the file');
+        $commit->diff['history.txt'][0]->shouldBe('-,1 Test the history of a file');
+        $commit->diff['history.txt'][1]->shouldBe("1,+ Test the history of a file\n");
+        $commit->diff['history.txt'][2]->shouldBe("2,+ \n");
+        $commit->diff['history.txt'][3]->shouldBe('3,+ By adding new lines to the file');
     }
 
     // the index
