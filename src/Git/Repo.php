@@ -210,15 +210,13 @@ class Repo implements Gittable
             $sha = 'refs/heads/'.$this->branch;
         }
         
-        $commit = new Commit($this, $sha);
-        $commits[] = $commit;
+        do {
+            $commit = new Commit($this, $sha);
+            $commits[] = $commit;
 
-        if ($number > 1) {
-            foreach ($commit->parents as $parent) {
-                $number -= 1;
-                $commits = array_merge($commits, $this->commits($parent, $number));
-            }
-        }
+            $sha = $commit->parents[0];
+            $number -= 1;
+        } while ($commit->parents && $number > 1);
         
         return $commits;
     }
