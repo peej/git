@@ -16,7 +16,7 @@ class Diff implements \ArrayAccess
                 $toA = $match[2];
                 $fromB = $match[3];
                 $toB = $match[4];
-                $index = 1;
+                $index = $fromA;
                 $lines = explode("\n", $match[5]);
                 foreach ($lines as $lnum => $line) {
                     if ($line != '\ No newline at end of file') {
