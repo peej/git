@@ -42,8 +42,8 @@ class RepoSpec extends ObjectBehavior
         $this->refHeads = $this->useBare ? 'refs/heads/' : '.git/refs/heads/';
 
         $this->execCommands(array(
-            'git config --global user.name "John Doe"',
-            'git config --global user.email johndoe@example.com'
+            'git config user.name "John Doe"',
+            'git config user.email johndoe@example.com'
         ));
 
         $this->execCommands(array(
