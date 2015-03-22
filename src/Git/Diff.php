@@ -10,7 +10,7 @@ class Diff implements \ArrayAccess
     {
         $this->diff = array();
         foreach ($diff as $filename => $patch) {
-            preg_match_all('#@ -([0-9]+)(,[0-9]+)? \+([0-9]+)(,[0-9]+)? @@\n(.+)(?:$|@)#s', $patch, $matches, PREG_SET_ORDER);
+            preg_match_all('#@@ -([0-9]+)(,[0-9]+)? \+([0-9]+)(,[0-9]+)? @@[^\n]*\n(.*)$#s', $patch, $matches, PREG_SET_ORDER);
             foreach ($matches as $match) {
                 $fromA = $match[1];
                 $toA = $match[2];
