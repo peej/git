@@ -242,6 +242,19 @@ class Repo implements Gittable
         throw new Exception('File "'.$filename.'" not found');
     }
 
+    public function note($sha = null, $note = null)
+    {
+        if (!$sha) {
+            $sha = 'refs/heads/'.$this->branch;
+        }
+        if ($note) {
+            $this->exec('git notes add -f -m '.escapeshellarg($note).' '.escapeshellarg($sha));
+            return $note;
+        } else {
+            return $this->exec('git notes show '.escapeshellarg($sha));
+        }
+    }
+
     public function index()
     {
         $index = $this->exec('git diff-index --cached refs/heads/'.$this->branch);

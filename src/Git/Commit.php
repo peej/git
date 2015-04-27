@@ -4,6 +4,8 @@ namespace Git;
 
 class Commit
 {
+    use Notes;
+
     private $repo;
 
     public $sha;
@@ -32,6 +34,9 @@ class Commit
         switch ($name) {
             case 'tree':
                 $this->setTree($value);
+                break;
+            case 'note':
+                $this->setNote($value);
                 break;
         }
     }
@@ -69,6 +74,9 @@ class Commit
 
             case 'files':
                 return $this->getFiles();
+
+            case 'note':
+                return $this->getNote();
 
             default:
                 return $this->getMetadata($key);

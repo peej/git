@@ -84,6 +84,14 @@ interface Gittable
     public function file($filename);
 
     /**
+     * Fetch or update the note attached to a given SHA
+     * @param str $sha
+     * @param str $note
+     * @return str
+     */
+    public function note($sha = null, $note = null);
+
+    /**
      * Get the current index
      * @param str $sha The SHA of the commit to fetch, if not given the HEAD of the current branch is fetched
      * @return Git\Commit

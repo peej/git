@@ -55,7 +55,10 @@ class RepoSpec extends ObjectBehavior
             'echo "initial commit" | git commit-tree {9}',
             'echo "{10}" > '.$this->refHeads.'master',
             'git branch feature',
-            'git tag tag'
+            'git tag tag',
+            'git notes add -m "A note on a blob" {7}',
+            'git notes add -m "A note on a tree" {9}',
+            'git notes add -m "A note on a commit" {10}'
         ));
     }
 
@@ -387,4 +390,52 @@ class RepoSpec extends ObjectBehavior
         $this->file('something.else.txt')->shouldBeLike('something else unrelated');
     }
 
+    // notes
+
+    public function it_can_read_the_notes_on_a_commit()
+    {
+        $this->commit()->shouldBeAnInstanceOf('Git\Commit');
+        $this->commit()->note->shouldBe('A note on a commit');
+    }
+
+    public function it_can_read_the_notes_on_a_tree()
+    {
+        $this->tree()->shouldBeAnInstanceOf('Git\Tree');
+        $this->tree()->note->shouldBe('A note on a tree');
+    }
+
+    public function it_can_read_the_notes_on_a_blob()
+    {
+        $this->tree()['test.txt']->shouldBeAnInstanceOf('Git\Blob');
+        $this->tree()['test.txt']->note->shouldBe('A note on a blob');
+    }
+
+    public function it_returns_empty_if_a_note_does_not_exist()
+    {
+        $this->tree()['numbers']['two.txt']->note->shouldBe('');
+    }
+
+    public function it_can_write_a_note_on_a_commit()
+    {
+        $commit = $this->commit();
+        $commit->note = 'An update to the note on a commit';
+        $commit->note->shouldBe('An update to the note on a commit');
+        $commit = $this->commit()->note->shouldBe('An update to the note on a commit');
+    }
+
+    public function it_can_write_a_note_on_a_tree()
+    {
+        $tree = $this->tree();
+        $tree->note = 'An update to the note on a tree';
+        $tree->note->shouldBe('An update to the note on a tree');
+        $tree = $this->tree()->note->shouldBe('An update to the note on a tree');
+    }
+
+    public function it_can_write_a_note_on_a_blob()
+    {
+        $blob = $this->tree()['test.txt'];
+        $blob->note = 'An update to the note on a blob';
+        $blob->note->shouldBe('An update to the note on a blob');
+        $blob = $this->tree()['test.txt']->note->shouldBe('An update to the note on a blob');
+    }
 }

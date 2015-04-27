@@ -4,6 +4,8 @@ namespace Git;
 
 class Tree implements \Iterator, \ArrayAccess
 {
+    use Notes;
+
     private $repo;
     private $position = 0;
     private $entries = array();
@@ -86,5 +88,19 @@ class Tree implements \Iterator, \ArrayAccess
     {
         $this->loadEntries();
         return isset($this->entries[$offset]) ? $this->entries[$offset] : null;
+    }
+
+    public function __get($key)
+    {
+        if ($key == 'note') {
+            return $this->getNote();
+        }
+    }
+
+    public function __set($name, $value)
+    {
+        if ($name == 'note') {
+            return $this->setNote($value);
+        }
     }
 }

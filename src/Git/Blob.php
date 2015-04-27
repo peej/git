@@ -4,6 +4,8 @@ namespace Git;
 
 class Blob
 {
+    use Notes;
+
     private $repo;
 
     private $metadata;
@@ -50,8 +52,17 @@ class Blob
             return $this->getContent();
         } elseif ($key == 'history') {
             return $this->getHistory();
+        } elseif ($key == 'note') {
+            return $this->getNote();
         } else {
             return $this->getHistory()[0]->$key;
+        }
+    }
+
+    public function __set($name, $value)
+    {
+        if ($name == 'note') {
+            return $this->setNote($value);
         }
     }
 
