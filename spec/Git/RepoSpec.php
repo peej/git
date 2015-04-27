@@ -99,7 +99,7 @@ class RepoSpec extends ObjectBehavior
         $this->shouldHaveType('Git\Repo');
     }
 
-    //*trees and blobs
+    // trees and blobs
 
     public function it_can_list_a_tree()
     {

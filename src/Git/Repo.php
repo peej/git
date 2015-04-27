@@ -268,7 +268,7 @@ class Repo implements Gittable
 
     public function resetIndex()
     {
-        $this->exec('git read-tree refs/heads/'.escapeshellarg($this->branch));
+        $this->exec('git read-tree '.escapeshellarg('refs/heads/'.$this->branch));
     }
 
     # write
