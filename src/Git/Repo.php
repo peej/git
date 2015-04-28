@@ -8,6 +8,8 @@ class Repo implements Gittable
     private $bare = true;
     private $branch = 'master';
 
+    public $gitBinary = 'git';
+
     public function __construct($repoPath)
     {
         $this->path = $repoPath;
@@ -18,9 +20,9 @@ class Repo implements Gittable
             }
             mkdir($this->path);
             if ($this->bare) {
-                $this->exec('git init --bare');
+                $this->exec($this->gitBinary.' init --bare');
             } else {
-                $this->exec('git init');
+                $this->exec($this->gitBinary.' init');
             }
         } elseif (!is_dir($this->path)) {
             throw new Exception('Repo path not a directory');
@@ -48,7 +50,7 @@ class Repo implements Gittable
         if (preg_match('/^[a-f0-9]{40}$/', $reference)) {
             $sha = $reference;
         } else {
-            $sha = $this->exec('git show-ref --heads -s '.escapeshellarg($reference));
+            $sha = $this->exec($this->gitBinary.' show-ref --heads -s '.escapeshellarg($reference));
             if (!$sha) {
                 throw new Exception('Could not dereference '.$reference);
             }
@@ -58,8 +60,8 @@ class Repo implements Gittable
 
     public function setUser($name, $email)
     {
-        $this->exec('git config --local user.name '.escapeshellarg($name));
-        $this->exec('git config --local user.email '.escapeshellarg($email));
+        $this->exec($this->gitBinary.' config --local user.name '.escapeshellarg($name));
+        $this->exec($this->gitBinary.' config --local user.email '.escapeshellarg($email));
     }
 
     private function getRefNames($refString, $prefix)
@@ -74,12 +76,12 @@ class Repo implements Gittable
 
     public function getBranches()
     {
-        return $this->getRefNames($this->exec('git show-ref --heads'), 'refs/heads/');
+        return $this->getRefNames($this->exec($this->gitBinary.' show-ref --heads'), 'refs/heads/');
     }
 
     public function getTags()
     {
-        return $this->getRefNames($this->exec('git show-ref --tags'), 'refs/tags/');
+        return $this->getRefNames($this->exec($this->gitBinary.' show-ref --tags'), 'refs/tags/');
     }
 
     public function setBranch($name = 'master')
@@ -89,26 +91,26 @@ class Repo implements Gittable
 
     public function createBranch($name)
     {
-        $this->exec('git branch '.escapeshellarg($name));
+        $this->exec($this->gitBinary.' branch '.escapeshellarg($name));
     }
 
     public function renameBranch($oldName, $newName)
     {
-        $this->exec('git branch -m '.escapeshellarg($oldName).' '.escapeshellarg($newName));
+        $this->exec($this->gitBinary.' branch -m '.escapeshellarg($oldName).' '.escapeshellarg($newName));
     }
 
     public function deleteBranch($name, $mustBeMerged = true)
     {
         if ($mustBeMerged) {
-            $this->exec('git branch -d '.escapeshellarg($name));
+            $this->exec($this->gitBinary.' branch -d '.escapeshellarg($name));
         } else {
-            $this->exec('git branch -D '.escapeshellarg($name));
+            $this->exec($this->gitBinary.' branch -D '.escapeshellarg($name));
         }
     }
 
     public function catFile($sha)
     {
-        return $this->exec('git cat-file -p '.$sha);
+        return $this->exec($this->gitBinary.' cat-file -p '.$sha);
     }
 
     public function loadTree($sha, $path = '')
@@ -132,19 +134,19 @@ class Repo implements Gittable
 
     public function log($filename)
     {
-        $log = $this->exec('git log --format=format:"%H" refs/heads/'.escapeshellarg($this->branch).' -- '.escapeshellarg($filename));
+        $log = $this->exec($this->gitBinary.' log --format=format:"%H" refs/heads/'.escapeshellarg($this->branch).' -- '.escapeshellarg($filename));
         return explode("\n", $log);
     }
 
     public function files($sha)
     {
-        $show = $this->exec('git show --pretty="format:" --name-only '.$sha);
+        $show = $this->exec($this->gitBinary.' show --pretty="format:" --name-only '.$sha);
         return explode("\n", trim($show));
     }
 
     public function commitMetadata($sha)
     {
-        $commitString = $this->exec('git show -U5 --format=format:'.escapeshellarg(Metadata::LOG_FORMAT).' '.$sha);
+        $commitString = $this->exec($this->gitBinary.' show -U5 --format=format:'.escapeshellarg(Metadata::LOG_FORMAT).' '.$sha);
         if (!$commitString) {
             throw new Exception('Log for commit "'.$sha.'"" not found');
         }
@@ -154,7 +156,7 @@ class Repo implements Gittable
         if ($parts) {
             $diffString = join("\n", $parts);
         } else {
-            $diffString = $this->exec('git diff -p '.$sha.'^1 '.$sha);
+            $diffString = $this->exec($this->gitBinary.' diff -p '.$sha.'^1 '.$sha);
         }
 
         $diff = array();
@@ -184,7 +186,7 @@ class Repo implements Gittable
     public function tree($path = '.')
     {
         if ($path == '.' || $path == '') {
-            $commit = $this->exec('git cat-file -p refs/heads/'.$this->branch);
+            $commit = $this->exec($this->gitBinary.' cat-file -p refs/heads/'.$this->branch);
             preg_match('/^tree ([0-9a-f]{40})$/m', $commit, $match);
             if (!isset($match[1])) {
                 throw new Exception('Could not find HEAD commit for '.$this->branch);
@@ -248,16 +250,16 @@ class Repo implements Gittable
             $sha = 'refs/heads/'.$this->branch;
         }
         if ($note) {
-            $this->exec('git notes add -f -m '.escapeshellarg($note).' '.escapeshellarg($sha));
+            $this->exec($this->gitBinary.' notes add -f -m '.escapeshellarg($note).' '.escapeshellarg($sha));
             return $note;
         } else {
-            return $this->exec('git notes show '.escapeshellarg($sha));
+            return $this->exec($this->gitBinary.' notes show '.escapeshellarg($sha));
         }
     }
 
     public function index()
     {
-        $index = $this->exec('git diff-index --cached refs/heads/'.$this->branch);
+        $index = $this->exec($this->gitBinary.' diff-index --cached refs/heads/'.$this->branch);
         preg_match_all('/^:[0-9]{6} [0-9]{6} [0-9a-f]{40} [0-9a-f]{40} ([ACDMRTUX])[0-9]{0,3}\t(.+)$/m', $index, $matches, PREG_SET_ORDER);
         $items = array();
         foreach ($matches as $match) {
@@ -268,7 +270,7 @@ class Repo implements Gittable
 
     public function resetIndex()
     {
-        $this->exec('git read-tree '.escapeshellarg('refs/heads/'.$this->branch));
+        $this->exec($this->gitBinary.' read-tree '.escapeshellarg('refs/heads/'.$this->branch));
     }
 
     # write
@@ -281,8 +283,8 @@ class Repo implements Gittable
      */
     public function add($filename, $content, $commitMessage = null)
     {
-        $sha = $this->exec('echo '.escapeshellarg($content).' | git hash-object -w --stdin');
-        $this->exec('git update-index --add --cacheinfo 100644 '.$sha.' '.escapeshellarg($filename));
+        $sha = $this->exec('echo '.escapeshellarg($content).' | '.$this->gitBinary.' hash-object -w --stdin');
+        $this->exec($this->gitBinary.' update-index --add --cacheinfo 100644 '.$sha.' '.escapeshellarg($filename));
         if ($commitMessage) {
             return $this->save($commitMessage);
         }
@@ -291,8 +293,8 @@ class Repo implements Gittable
 
     public function update($filename, $content, $commitMessage = null)
     {
-        $sha = $this->exec('echo '.escapeshellarg($content).' | git hash-object -w --stdin');
-        $this->exec('git update-index --cacheinfo 100644 '.$sha.' '.escapeshellarg($filename));
+        $sha = $this->exec('echo '.escapeshellarg($content).' | '.$this->gitBinary.' hash-object -w --stdin');
+        $this->exec($this->gitBinary.' update-index --cacheinfo 100644 '.$sha.' '.escapeshellarg($filename));
         if ($commitMessage) {
             return $this->save($commitMessage);
         }
@@ -316,7 +318,7 @@ class Repo implements Gittable
 
     public function remove($filename, $commitMessage = null)
     {
-        $this->exec('git rm --cached '.escapeshellarg($filename));
+        $this->exec($this->gitBinary.' rm --cached '.escapeshellarg($filename));
         if ($commitMessage) {
             return $this->save($commitMessage);
         }
@@ -328,14 +330,14 @@ class Repo implements Gittable
      */
     public function save($commitMessage)
     {
-        $sha = $this->exec('git write-tree');
+        $sha = $this->exec($this->gitBinary.' write-tree');
         try {
             $parentSha = $this->dereference($this->branch);
-            $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | git commit-tree -p '.$parentSha.' '.$sha);
+            $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | '.$this->gitBinary.' commit-tree -p '.$parentSha.' '.$sha);
         } catch (Exception $e) {
-            $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | git commit-tree '.$sha);
+            $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | '.$this->gitBinary.' commit-tree '.$sha);
         }
-        $this->exec('git update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
+        $this->exec($this->gitBinary.' update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
         $this->resetIndex();
         return $sha;
     }
@@ -344,8 +346,8 @@ class Repo implements Gittable
 
     public function canMerge($branch)
     {
-        $sha = $this->exec('git merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
-        $merge = $this->exec('git merge-tree '.escapeshellarg($sha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $sha = $this->exec($this->gitBinary.' merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $merge = $this->exec($this->gitBinary.' merge-tree '.escapeshellarg($sha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
         if ($merge == '') {
             throw new Exception('Base branch already contains everything in head branch, nothing to merge');
         } elseif (preg_match_all('/in both\n *(?:base|our|their) +100644 [a-f0-9]+ ([^\n]+)/', $merge, $filenames)) {
@@ -366,7 +368,7 @@ class Repo implements Gittable
             if (isset($e->filenames)) {
                 $diffs = array();
                 foreach ($e->filenames as $filename) {
-                    $d = $this->exec('git diff '.escapeshellarg($this->branch).' '.escapeshellarg($branch).' -- '.$filename);
+                    $d = $this->exec($this->gitBinary.' diff '.escapeshellarg($this->branch).' '.escapeshellarg($branch).' -- '.$filename);
                     preg_match('#^[^\n]+\n(?:[^\n]+\n)?[^\n]+\n--- (?:/dev/null|a/([^\n]+))\n\+\+\+ (?:/dev/null|b/([^\n]+))\n(@@.+)$#s', $d, $matches);
                     if (count($matches) == 4) {
                         $diffs[$matches[1] ?: $matches[2]] = $matches[3];
@@ -396,13 +398,13 @@ class Repo implements Gittable
             $commitMessage = 'Merge '.$branch.' into '.$this->branch;
         }
 
-        $baseSha = $this->exec('git merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
-        $this->exec('git read-tree -m -i '.escapeshellarg($baseSha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
-        $sha = $this->exec('git write-tree');
+        $baseSha = $this->exec($this->gitBinary.' merge-base '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $this->exec($this->gitBinary.' read-tree -m -i '.escapeshellarg($baseSha).' '.escapeshellarg($this->branch).' '.escapeshellarg($branch));
+        $sha = $this->exec($this->gitBinary.' write-tree');
         
-        $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | git commit-tree -p '.$parent1Sha.' -p '.$parent2Sha.' '.$sha);
+        $sha = $this->exec('echo '.escapeshellarg($commitMessage).' | '.$this->gitBinary.' commit-tree -p '.$parent1Sha.' -p '.$parent2Sha.' '.$sha);
 
-        $this->exec('git update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
+        $this->exec($this->gitBinary.' update-ref '.escapeshellarg('refs/heads/'.$this->branch).' '.escapeshellarg($sha));
         return $sha;
     }
 
@@ -416,7 +418,7 @@ class Repo implements Gittable
         }
 
         try {
-            $this->exec('git diff -R '.escapeshellarg($sha.'~1').' '.escapeshellarg($sha).' | git apply --index');
+            $this->exec($this->gitBinary.' diff -R '.escapeshellarg($sha.'~1').' '.escapeshellarg($sha).' | '.$this->gitBinary.' apply --index');
         } catch (Exception $e) {
             return false;
         }
@@ -436,7 +438,7 @@ class Repo implements Gittable
             throw new Exception('Can not revert with dirty index');
         }
 
-        $this->exec('git diff -R --cached '.escapeshellarg($sha).' | git apply --index');
+        $this->exec($this->gitBinary.' diff -R --cached '.escapeshellarg($sha).' | '.$this->gitBinary.' apply --index');
 
         if ($commitMessage) {
             return $this->save($commitMessage);
