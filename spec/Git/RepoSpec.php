@@ -438,4 +438,9 @@ class RepoSpec extends ObjectBehavior
         $blob->note->shouldBe('An update to the note on a blob');
         $blob = $this->tree()['test.txt']->note->shouldBe('An update to the note on a blob');
     }
+
+    public function it_can_execute_a_custom_git_subcommand()
+    {
+        $this->command('ls-files')->shouldBe("numbers/one.txt\nnumbers/two.txt\ntest.txt");
+    }
 }

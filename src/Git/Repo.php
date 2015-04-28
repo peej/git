@@ -45,6 +45,11 @@ class Repo implements Gittable
         return join("\n", $output);
     }
 
+    public function command($command)
+    {
+        return $this->exec($this->gitBinary.' '.$command);
+    }
+
     public function dereference($reference)
     {
         if (preg_match('/^[a-f0-9]{40}$/', $reference)) {
