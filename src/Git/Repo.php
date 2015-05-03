@@ -94,9 +94,9 @@ class Repo implements Gittable
         $this->branch = $name;
     }
 
-    public function createBranch($name)
+    public function createBranch($name, $startPoint)
     {
-        $this->exec($this->gitBinary.' branch '.escapeshellarg($name));
+        $this->exec($this->gitBinary.' branch '.escapeshellarg($name).' '.escapeshellarg($startPoint));
     }
 
     public function renameBranch($oldName, $newName)

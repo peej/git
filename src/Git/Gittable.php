@@ -17,7 +17,7 @@ interface Gittable
      */
     public function setBranch($name);
 
-    public function createBranch($name);
+    public function createBranch($name, $startPoint);
 
     public function deleteBranch($name, $mustBeMerged);
 

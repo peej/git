@@ -242,7 +242,7 @@ class RepoSpec extends ObjectBehavior
 
     public function it_creates_commits_on_the_given_branch()
     {
-        $this->createBranch('other');
+        $this->createBranch('other', 'master');
         $this->setBranch('other');
         $this->add('new.txt', 'new content', 'create a file')->shouldBeSha();
         $this->file('new.txt')->shouldBeLike('new content');
@@ -266,7 +266,7 @@ class RepoSpec extends ObjectBehavior
 
     public function it_should_create_a_branch()
     {
-        $this->createBranch('new');
+        $this->createBranch('new', 'feature');
         $this->getBranches()->shouldBe(array(
             'feature',
             'master',
